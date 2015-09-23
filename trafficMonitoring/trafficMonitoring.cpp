@@ -40,13 +40,13 @@ int main(int argc, char** argv)
 }
 void mergeMask(Mat& mask)
 {
-	int type = MORPH_ELLIPSE;
+	int type = MORPH_RECT;
 	int size = 2;
 	Mat element = getStructuringElement(type,
 		Size(2 * size + 1, 2 * size + 1),
 		Point(size, size));
-	morphologyEx(mask, mask, MORPH_OPEN, element, Point(-1, -1), 2);
-	morphologyEx(mask, mask, MORPH_CLOSE, element, Point(-1, -1), 4);
+	morphologyEx(mask, mask, MORPH_OPEN, element, Point(-1, -1), 1);
+	morphologyEx(mask, mask, MORPH_CLOSE, element, Point(-1, -1), 2);
 }
 void addInfo(Mat& frame, string string)
 {
@@ -61,15 +61,16 @@ void addBoundingBox(Mat& frame, Mat& mask)
 	Mat threshout = mask.clone();
 	//cvtColor(threshout, threshout, COLOR_BGR2GRAY);
 	//threshold(threshout, threshout, 1, 255, CV_THRESH_BINARY);
-	findContours(threshout, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, Point(0, 0)); //Use in Release mode only!!!
+	//findContours will get the outer contours. any holes are not unique contours.
+	findContours(threshout, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0)); //Use in Release mode only!!!
 
 	/// Approximate contours to polygons + get bounding rects and circles
 	vector<vector<Point> > contours_poly(contours.size());
 	vector<Rect> boundRect(contours.size());
 	for (int i = 0; i < contours.size(); i++)
 	{
-		approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);
-		boundRect[i] = boundingRect(Mat(contours_poly[i]));
+		//approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);
+		boundRect[i] = boundingRect(Mat(contours[i]));
 	}
 
 	/// Draw polygonal contour + bonding rects + circles
@@ -95,7 +96,7 @@ void processVideo(char* videoFilename)
 
 	//create Background Subtractor objects
 	int history = 500;
-	double thresh = 16.0;
+	double thresh = 100.0;
 	bool detectShadows = false;
 	Ptr<BackgroundSubtractor> pMOG2 = createBackgroundSubtractorMOG2(history, thresh, detectShadows); //MOG2 approach
 
@@ -117,7 +118,7 @@ void processVideo(char* videoFilename)
 		}
 		//Some enhancements
 		cvtColor(orig, frame, COLOR_BGR2GRAY);
-		GaussianBlur(frame, frame, Size(5, 5), 1.5, 1.5);
+		GaussianBlur(frame, frame, Size(7, 7), 1.5, 1.5);
 
 
 		//update the background model and gets forground mask
