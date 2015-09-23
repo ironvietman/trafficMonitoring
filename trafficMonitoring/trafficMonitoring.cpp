@@ -48,14 +48,14 @@ void mergeMask(Mat& mask)
 	morphologyEx(mask, mask, MORPH_OPEN, element, Point(-1, -1), 1);
 	morphologyEx(mask, mask, MORPH_CLOSE, element, Point(-1, -1), 2);
 }
-void addInfo(Mat& frame, string string)
+void addInfo(Mat& frame, string string, cv::Point tl, cv::Point br)
 {
-	rectangle(frame, cv::Point(10, 2), cv::Point(100, 20),
+	rectangle(frame, tl,br,
 		cv::Scalar(255, 255, 255), -1);
-	putText(frame, string.c_str(), cv::Point(15, 15),
+	putText(frame, string.c_str(), Point(tl.y + 13, tl.y+13),
 		FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0));
 }
-void addBoundingBox(Mat& frame, Mat& mask)
+vector<Rect> addBoundingBox(Mat& frame, Mat& mask)
 {
 	vector< vector< cv::Point> > contours;
 	Mat threshout = mask.clone();
@@ -82,6 +82,34 @@ void addBoundingBox(Mat& frame, Mat& mask)
 		rectangle(frame, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0);
 	}
 
+	return boundRect;
+}
+
+//Dumb classifier by size.
+vector<int> classifyObjects(vector<Rect> boundRect)
+{
+	vector<int> numberOfObjects(3.0);
+	
+	for each (Rect box in boundRect)
+	{
+		int area = box.area();
+		cout << area << endl;
+		if (area >= 10 && area < 500) //person
+		{
+			numberOfObjects[2]++;
+		} else if (area >= 500 && area < 9000) //car
+		{
+			numberOfObjects[1]++;
+		}
+		else if (area >= 9000) //bus
+		{
+			numberOfObjects[0]++;
+		}
+		
+	}
+
+
+	return numberOfObjects;
 }
 
 void processVideo(char* videoFilename)
@@ -124,18 +152,23 @@ void processVideo(char* videoFilename)
 		//update the background model and gets forground mask
 		pMOG2->apply(frame, fgMaskMOG2);
 
-		//get the frame number and write it on the current frame
-		stringstream ss;
-		ss << capture.get(CAP_PROP_POS_FRAMES) << "/" << capture.get(CV_CAP_PROP_FRAME_COUNT);
-		addInfo(orig, ss.str());
-
 		//Enhance the mask
 		mergeMask(fgMaskMOG2);
 
 		/// Find contours
 		//Mat cimg = frame.clone();
-		addBoundingBox(orig, fgMaskMOG2);
+		vector<Rect> boundRect = addBoundingBox(orig, fgMaskMOG2);
 
+		//Classify
+		vector<int> numberOfObjects = classifyObjects(boundRect);
+
+		//get the frame number and write it on the current frame
+		stringstream ss;
+		stringstream ss2;
+		ss << capture.get(CAP_PROP_POS_FRAMES) << "/" << capture.get(CV_CAP_PROP_FRAME_COUNT);
+		ss2 << numberOfObjects[0] << "/" << numberOfObjects[1] << "/" << numberOfObjects[2];
+		addInfo(orig, ss.str(), cv::Point(10, 2), cv::Point(120, 20));
+		addInfo(orig, ss2.str(), cv::Point(10, 22), cv::Point(120, 40));
 		//show the current frame and the fg masks
 		imshow("Frame", orig);
 		imshow("FG Mask MOG 2", fgMaskMOG2);
