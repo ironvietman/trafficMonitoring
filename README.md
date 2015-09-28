@@ -1,13 +1,20 @@
 # trafficMonitoring
-Tracks cars and people with a still background
-
-## Todo
-This is just an initial version of the program. It has lots of bugs and is not complete. 
-- Classify bus/cars/people
-- Detections more solid
-- Count moving objects
+Exploring methods to detect and classify vehicles and pedestrians on a still background. 
 
 ## Requirements
-- OpenCV
-- Visual Studios 2013
+- openCV 3.0
+- Visual studios 2013
+
+## Notes
+This project requires OpenCV to be installed and OPENCV_DIR system variable to
+be defined. Make sure you change settings for C++ and Linker to include these
+additional  include directories
+
+- $(OPENCV_DIR)\..\..\include
+- $(OPENCV_DIR)\lib
+
+Add the following Additional Dependencies to the Linker input
+- opencv_ts300d.lib
+- opencv_world300d.lib
+
 
